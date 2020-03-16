@@ -28,14 +28,17 @@ app.layout = html.Div([
                     }
                 ),
 
-                html.H4(
+                html.P(
                     'Descriptions Descriptions Descriptions',
                     style = {
                         'padding-left':'20px'
                     }
                 )
 
-            ], className = 'card text-white bg-secondary mb-3',
+            ], className = 'card text-white bg-primary mb-3',
+                style = {
+                    'height':'200px'
+                },
 
             ),
 
@@ -45,7 +48,7 @@ app.layout = html.Div([
                 html.H4(
                     'Upload Your File',
                     style = {
-
+                        'margin':'20px'
                     }
                 ),
 
@@ -57,21 +60,21 @@ app.layout = html.Div([
                         html.A('Select Files')
                     ]),
                     style={
-                        'width': '400px',
+                        'width': '300px',
                         'height': '60px',
                         'lineHeight': '60px',
                         'borderWidth': '1px',
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center',
-                        'margin': '10px',
+                        'margin': '30px',
                         'position':'absolute'
                     },
 
                     # Allow multiple files to be uploaded
                     multiple=True
                 ),        
-            ], className = 'card text-white bg-primary mb-3',
+            ], className = 'card bg-light mb-3',
                 style = {
                     'height':'480px'
                 })
@@ -90,7 +93,11 @@ app.layout = html.Div([
             #graph container
             html.Div([ 
 
-            ], className = 'card text-white bg-primary mb-3',
+                html.Div([
+                    'Graph Output'
+                ], className = 'card-header')
+
+            ], className = 'card border-primary mb-3',
                 style = {
                     'height':'700px',
                     'width':'600px',
@@ -106,7 +113,11 @@ app.layout = html.Div([
             #data container
             html.Div([ 
 
-            ], className = 'card text-white bg-primary mb-3',
+                html.Div([
+                    'Data Output'
+                ], className = 'card-header')
+
+            ], className = 'card border-secondary mb-3',
                 style = {
                     'height':'700px',
                     'width':'400px',
