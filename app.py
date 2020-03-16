@@ -13,80 +13,115 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions']=True
 
 app.layout = html.Div([
-    
-    #left-hand column
-    html.Div([
+    html.Div([ 
 
-        #continer for dashboard name
+        #left-hand column
         html.Div([
 
-            html.H1(
-                'Dash/Flask Format',
-                style = {
-                    'margin':'20px'
-                }
+            #continer for dashboard name
+            html.Div([
+
+                html.H1(
+                    'Recipe Optimization',
+                    style = {
+                        'margin':'20px'
+                    }
+                ),
+
+                html.H4(
+                    'Descriptions Descriptions Descriptions',
+                    style = {
+                        'padding-left':'20px'
+                    }
+                )
+
+            ], className = 'card text-white bg-secondary mb-3',
+
             ),
 
-            html.H4(
-                'Descriptions Descriptions Descriptions',
+            #container for csv upload/template download
+            html.Div([ 
+
+                html.H4(
+                    'Upload Your File',
+                    style = {
+
+                    }
+                ),
+
+                #file upload box
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Div([
+                        'Drag and Drop or ',
+                        html.A('Select Files')
+                    ]),
+                    style={
+                        'width': '400px',
+                        'height': '60px',
+                        'lineHeight': '60px',
+                        'borderWidth': '1px',
+                        'borderStyle': 'dashed',
+                        'borderRadius': '5px',
+                        'textAlign': 'center',
+                        'margin': '10px',
+                        'position':'absolute'
+                    },
+
+                    # Allow multiple files to be uploaded
+                    multiple=True
+                ),        
+            ], className = 'card text-white bg-primary mb-3',
                 style = {
-                    'padding-left':'20px'
-                }
-            )
+                    'height':'480px'
+                })
 
-        ], className = 'card text-white bg-secondary mb-3',
+        ], className = 'col-3',
+            style = {
+                'margin':'20px',
+                'height':'700px'
 
+            }
         ),
 
-        #container for csv upload/template download
-        html.Div([ 
-
-            #file upload box
-            dcc.Upload(
-                id='upload-data',
-                children=html.Div([
-                    'Drag and Drop or ',
-                    html.A('Select Files')
-                ]),
-                style={
-                    'width': '100%',
-                    'height': '60px',
-                    'lineHeight': '60px',
-                    'borderWidth': '1px',
-                    'borderStyle': 'dashed',
-                    'borderRadius': '5px',
-                    'textAlign': 'center',
-                    'margin': '10px',
-                },
-
-                # Allow multiple files to be uploaded
-                multiple=True
-            ),        
-        ])
-
-    ], style = {
-            'margin':'50px'
-
-        }
-    ),
-
-    #right column
-    html.Div([
-
-        #container for graph output
+        #middle column
         html.Div([
 
-        ]),
+            #graph container
+            html.Div([ 
 
-        #container for data output
+            ], className = 'card text-white bg-primary mb-3',
+                style = {
+                    'height':'700px',
+                    'width':'600px',
+                    'margin':'20px'
+                })
+
+
+        ], className = 'col-5'),
+
+        #right column
         html.Div([ 
 
-        ])
+            #data container
+            html.Div([ 
 
-    ])
+            ], className = 'card text-white bg-primary mb-3',
+                style = {
+                    'height':'700px',
+                    'width':'400px',
+                    'margin':'20px'
+                })
 
 
-], className = 'row')
+        ], className = 'col-3')
+
+
+    ], className = 'row')
+
+
+
+ ])
 
 if __name__ == '__main__':
     app.run_server(debug=True)
