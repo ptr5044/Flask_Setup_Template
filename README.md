@@ -8,8 +8,7 @@ in command line and run this command: py -m pip install -r requirements.txt
 
 
 
-Or you can just activate the attached virtual enviornment inside the project folder using:
-./venv/Scripts/Activate.ps1
+Or you can just activate the attached virtual enviornment(venv) inside vscode
 
 
 ## Launching
