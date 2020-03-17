@@ -2,7 +2,7 @@ Flask/Dash App Template
 =============================
 
 Hey all, to download all the dependencies navigate to the project folder
-in terminal and run this command: py -m pip install -r requirements.txt
+in command line and run this command: py -m pip install -r requirements.txt
 
 
 
