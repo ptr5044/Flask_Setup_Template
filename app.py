@@ -1,11 +1,14 @@
 import xlrd
 import pandas as pd
 import numpy as np
+import pulp
+import math
 
 import base64
 import datetime
 import io
 import dash_table
+import plotly.graph_objs as go
 
 from flask import Flask
 import dash
@@ -28,16 +31,20 @@ app.layout = html.Div([
             html.Div([
 
                 html.H1(
-                    'Recipe Optimization',
+                    'Mars Recipe Optimizer',
                     style = {
-                        'margin':'20px'
+                        'margin':'20px',
+
                     }
                 ),
 
-                html.P(
-                    'Descriptions Descriptions Descriptions',
+                html.H6(
+                    'This includes the simple recipe optimizer without price simulation.  For simulation, please use the heatmap dashboard',
                     style = {
-                        'padding-left':'20px'
+                        'padding-left':'20px',
+                        'padding-top':'10px',
+                        'padding-right':'10px'
+
                     }
                 )
 
@@ -66,7 +73,7 @@ app.layout = html.Div([
                         html.A('Select Files')
                     ]),
                     style={
-                        'width': '300px',
+                        'width': '400px',
                         'height': '60px',
                         'lineHeight': '60px',
                         'borderWidth': '1px',
@@ -81,14 +88,43 @@ app.layout = html.Div([
                     multiple=True
                 ),
 
-                html.Div(id = 'data-file-output')  
+                html.P(
+                    "Please make sure all uploads follow the template below, otherwise the app will not function!",
+                    style = {
+                        'padding-left':'20px',
+                        'padding-top':'130px',
+                        'padding-right':'30px',
+                        'text-align':'justify'
+                    }
+                ),
 
-            ], className = 'card bg-light mb-3',
+                html.P(
+                    "To modify the existing template, adjust recipes, ingredients, and constraints.  Be mindful to retain the current formatting.  For any questions/comments/concerns, contact Phillip Rubin at phillip.rubin@effem.com",
+                    style = {
+                        'padding-left':'20px',
+                        'padding-right':'30px',
+                        'text-align':'justify'
+                    }
+                ),
+
+                html.A(
+                    'Download Sample Template',
+                    id = 'download-link',
+                    href = "https://teams.microsoft.com/_#/xlsx/viewer/teams/https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization~2FShared%20Documents~2FGeneral~2Fexample_template.xlsx?threadId=19:0b4cc01bbc0e494fbce614c89e97e319@thread.tacv2&baseUrl=https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization&fileId=4ace4ed9-6fa0-4e9d-acb2-42ab2926ee9c&ctx=files&rootContext=items_view&viewerAction=view",
+                    style = {
+                        'padding-top':'50px',
+                        'padding-left':'20px',
+                        'color':'white',
+                        'font-size':'20px'
+                    }
+                )  
+
+            ], className = 'card text-white bg-secondary mb-3',
                 style = {
                     'height':'480px'
                 })
 
-        ], className = 'col-3',
+        ], className = 'col-4',
             style = {
                 'margin':'20px',
                 'height':'700px'
@@ -99,52 +135,57 @@ app.layout = html.Div([
         #middle column
         html.Div([
 
-            #graph container
+            #upper row
             html.Div([ 
 
-                html.Div([
-                    'Graph Output'
-                ], className = 'card-header')
-
-            ], className = 'card border-primary mb-3',
-                style = {
-                    'height':'700px',
-                    'width':'600px',
-                    'margin':'20px'
-                })
-
-
-        ], className = 'col-5'),
-
-        #right column
-        html.Div([ 
-
-            #data container
-            html.Div([ 
-
-                html.Div([
-                    'Data Output'
-                ], className = 'card-header'),
-
+                #graph container
                 html.Div([ 
-                    html.H1()
-                ], className = 'card-body',
-                    id = 'output-data-upload')
 
-            ], className = 'card border-secondary mb-3',
-                style = {
-                    'height':'700px',
-                    'width':'400px',
-                    'margin':'20px'
-                })
+                    html.Div([
+                        'Graph Output'
+                    ], className = 'card-header'),
+
+                    html.Div(id = 'output-graph-upload')
+
+                ], className = 'card border-primary mb-3',
+                    style = {
+                        'height':'500px',
+                        'width':'1100px',
+                        'margin':'20px'
+                    }),
+
+            ], className = 'row'),
+
+            #lower row
+            html.Div([ 
+
+                #data container
+                html.Div([ 
+
+                    html.Div([
+                        'Data Output'
+                    ], className = 'card-header'),
+
+                    #output data frame
+                    html.Div([ 
+                        html.H1()
+                    ], className = 'card-body',
+                        id = 'output-data-upload')
+
+                ], className = 'card border-secondary mb-3',
+                    style = {
+                        'height':'500px',
+                        'width':'1100px',
+                        'margin':'20px'
+                    }
+                )
 
 
-        ], className = 'col-3')
+            ], className = 'row')
 
+        ], className = 'col-7'),
 
     ], className = 'row')
-
-
 
  ])
 
@@ -167,6 +208,7 @@ def run_optimizer(recipe_df, constraints_df):
         else:
             constraint_frames.append(constraints_df.loc[df_seperators[i]:])
 
+    #parses first sheet into useful elements
     costdf = recipe_df.iloc[:,2]
     ingredients = np.array((recipe_df['Ingredient']))
     seperated_recipes_df = recipe_df.drop(recipe_df.columns[[0,1,2]], axis=1)
@@ -177,9 +219,117 @@ def run_optimizer(recipe_df, constraints_df):
         name = str('case' + str(i+1))
         case_names.append(name)
 
+    #collection df for final output
+    all_optimized_recipes = pd.DataFrame()
+    
+    #sets dictionary for pulp to iterate through, if above 10 variables ingredients get out of order
+    alfa = "abcdefghijklmnopqrstuvwxyz"
+    adict = dict([ (x[1],x[0]) for x in enumerate(alfa) ])
 
+    #runs the optimization for each constraint             
+    for k in range(len(constraint_frames)):
+
+        #each constraint frame is a different case
+        df = constraint_frames[k]
+        df = df.reset_index().drop("index", axis=1)
+   
+        #obtains number of ingredients
+        ingredient_number = df.iloc[:, :-4].iloc[:, 3:].columns.size
+
+        #creates problem for optimization to solve
+        prob = pulp.LpProblem('CheapestRecipe', pulp.LpMinimize)
         
-    return case_names[0]
+        #creates variables or ingredients for linear optimization
+        decision_variables = []
+        for i in range(ingredient_number):
+            variable = str(alfa[i])
+            variable = pulp.LpVariable(str(variable), cat= 'Continuous')
+            decision_variables.append(variable)
+
+        #creates problem to solve
+        total_cost = ''      
+        for i in range(costdf.size):
+            formula = decision_variables[i] * costdf[i]
+            total_cost += formula
+
+        prob += total_cost
+
+        #creates constraints for recipes
+        for i in range(len(df.index)):
+            constraint = ''
+            
+            #performs action for each variable or ingredient
+            for c in range(ingredient_number):
+                c += 3
+                
+                #if a cell has a digit, it is a constraint, ignores all NaN
+                if math.isnan(df.iat[i,c]) == False:
+                    var = (decision_variables[c-3])
+                    
+                    #checks digit value and multiplies variable by it
+                    multiplier = float(df.iat[i,c])
+                    constraint += (var * multiplier)
+                    
+            #indentifies int that constraint must abide by
+            constraint_int = df.iat[i,len(df.columns)-1]
+            
+            #checks comparison operator to finish constraint
+            constraint_compare = df.iat[i, len(df.columns)-2]
+            if constraint_compare == '<=':
+                prob += constraint <= constraint_int
+            if constraint_compare == '>=':
+                prob += constraint >= constraint_int
+            if constraint_compare == '==' or constraint_compare == '=':
+                prob += constraint == constraint_int
+
+        prob.solve()
+
+        #writes recipe for solved optimization problem
+        recipe = np.array([])
+        for v in prob.variables():
+            recipe = np.append(recipe, v.varValue)
+        recipe = recipe[recipe != np.array(None)]
+
+
+        #established dataframe constaining optimized recipe values
+        optimum_case = pd.DataFrame(np.zeros((1, ingredients.size)))
+        optimum_case.columns = ingredients
+        optimum_case['cost'] = find_cost(np.array(costdf), recipe)
+        optimum_case['Recipe Name'] = case_names[k]
+
+
+        for e in range(ingredients.size):
+            optimum_case.at[0, ingredients[e]] = recipe[e]
+
+                
+        #appends to original dataframe
+        all_optimized_recipes = all_optimized_recipes.append(optimum_case)
+
+
+    # seperated_recipes_df = seperated_recipes_df.drop(seperated_recipes_df.columns[0], axis = 1)
+    i = 0
+
+    #checks how many existing recipes there are
+    for col in seperated_recipes_df.columns:
+        existing_recipe = pd.DataFrame(np.zeros((1, ingredients.size)))
+        existing_recipe.columns = ingredients
+
+        #finds cost and ingredient amount for each existing recipe
+        for g in range(len(seperated_recipes_df.index)):
+            existing_recipe.iat[0, g] = seperated_recipes_df.iloc[g][col]
+        existing_recipe['cost'] = find_cost(np.array(costdf), np.array(seperated_recipes_df[col]))
+        existing_recipe['Recipe Name'] = col[-6:]
+        all_optimized_recipes = all_optimized_recipes.append(existing_recipe)
+        i = i+1    
+        
+
+    #organizes dataframe
+    neworder = np.insert(ingredients, 0, 'Recipe Name', axis = 0)
+    neworder = np.insert(neworder, 1, 'cost', axis = 0)
+
+    all_optimized_recipes = all_optimized_recipes.reindex(columns=neworder)
+
+    return all_optimized_recipes.round(2)
 
 
 #obtain files from front end
@@ -192,38 +342,58 @@ def parse_contents(contents, filename, date):
             # Assume that the user uploaded a CSV file
             return html.Div([ 
                 'You uploaded a CSV, could you upload an Excel file please?'
-            ])
+            ]), html.Div([' '])
         elif 'xls' or 'xlsx' in filename:
             # Assume that the user uploaded an excel file
             try:
                 recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Cleaned-Milk').dropna()
                 constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'MM Milk constraints')
-                data_len = str(run_optimizer(recipe_df, constraints_df))
+                final_output = run_optimizer(recipe_df, constraints_df)
+
+                bar_figure = go.Figure(data = [go.Bar(x = final_output['Recipe Name'], y = final_output['cost'], marker = {'color': final_output['cost'], 'colorscale' : 'tealrose'})])
+                bar_figure.update_layout(title_text = 'Cost for Optimized Cases and Existing Recipes')
+                bar_figure.update_xaxes(title_text = 'Recipe Name', tickangle = 45)
+                bar_figure.update_yaxes(range = [final_output['cost'].min()-100, final_output['cost'].max()+50], title_text = 'Cost for 1000kg')
+
 
 
             except Exception as e:
                 print(e)
                 return html.Div([ 
                     'There is somthing wrong with your file format, try again please'
-                ])
+                ]), html.Div([' '])
+                
 
     except Exception as e:
         print(e)
         return html.Div([
             'There was an error processing this file.'
-        ])
+        ]), html.Div(' ')
 
     return html.Div([
-        html.H5(filename),
-        html.H5(data_len),
-        html.H6(datetime.datetime.fromtimestamp(date)),
-    ])
+        html.H6(
+            'Ingredients for Optimized and Existing Recipes',
+            style = {
+                'padding-bottom' : '10px'
+            }
+        ),
 
+        dash_table.DataTable(
+            data=final_output.to_dict('records'),
+            columns=[{'name': i, 'id': i} for i in final_output.columns]
+        )
+    ]), html.Div([
+            dcc.Graph(
+                figure = bar_figure
+            )
+        ])
 
-@app.callback(Output('output-data-upload', 'children'),
-              [Input('upload-data', 'contents')],
-              [State('upload-data', 'filename'),
-               State('upload-data', 'last_modified')])
+@app.callback(
+        [Output('output-data-upload', 'children'),
+        Output('output-graph-upload', 'children')],
+        [Input('upload-data', 'contents')],
+        [State('upload-data', 'filename'),
+        State('upload-data', 'last_modified')])
 
 
 def update_output(content, names, dates):
@@ -232,7 +402,13 @@ def update_output(content, names, dates):
             parse_contents(c, n, d) for c, n, d in
             zip(content, names, dates)]
 
-        return children
+        return children[0]
+    else:
+
+        return html.Div(" "), html.H4(["Hi there! Upload your file to get started."], style = {'margin':'20px'})
+    
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
