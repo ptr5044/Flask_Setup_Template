@@ -17,5 +17,7 @@ Or you can just activate the attached virtual enviornment(venv) inside vscode
 Then run the python file and the app should launch locally,
 paste the local IP address from the output in your browser
 
+To see a completed example, go to the recipe_optimizer branch
+
 email me with any questions
 phillip.rubin@effem.com
