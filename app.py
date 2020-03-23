@@ -108,7 +108,7 @@ app.layout = html.Div([
                 ),
 
                 html.A(
-                    'Download Sample Template',
+                    'Download Sample File',
                     id = 'download-link',
                     href = "https://teams.microsoft.com/_#/xlsx/viewer/teams/https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization~2FShared%20Documents~2FGeneral~2Fexample_template.xlsx?threadId=19:0b4cc01bbc0e494fbce614c89e97e319@thread.tacv2&baseUrl=https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization&fileId=4ace4ed9-6fa0-4e9d-acb2-42ab2926ee9c&ctx=files&rootContext=items_view&viewerAction=view",
                     style = {
@@ -189,6 +189,12 @@ app.layout = html.Div([
 
  ])
 
+
+
+# I created the functions below a long time ago, they're pretty bad
+# please make improvements as you see fit
+
+
 def find_cost(pricelist, ingr_cost):
     cost = 0
     for i in range(ingr_cost.size):
@@ -248,8 +254,8 @@ def run_optimizer(recipe_df, constraints_df):
 
         #creates problem to solve
         total_cost = ''      
-        for i in range(costdf.size):
-            formula = decision_variables[i] * costdf[i]
+        for cost in costdf:
+            formula = decision_variables[i] * cost
             total_cost += formula
 
         prob += total_cost
@@ -307,7 +313,7 @@ def run_optimizer(recipe_df, constraints_df):
 
 
     # seperated_recipes_df = seperated_recipes_df.drop(seperated_recipes_df.columns[0], axis = 1)
-    i = 0
+
 
     #checks how many existing recipes there are
     for col in seperated_recipes_df.columns:
@@ -320,7 +326,7 @@ def run_optimizer(recipe_df, constraints_df):
         existing_recipe['cost'] = find_cost(np.array(costdf), np.array(seperated_recipes_df[col]))
         existing_recipe['Recipe Name'] = col[-6:]
         all_optimized_recipes = all_optimized_recipes.append(existing_recipe)
-        i = i+1    
+ 
         
 
     #organizes dataframe
@@ -346,8 +352,8 @@ def parse_contents(contents, filename, date):
         elif 'xls' or 'xlsx' in filename:
             # Assume that the user uploaded an excel file
             try:
-                recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Cleaned-Milk').dropna()
-                constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'MM Milk constraints')
+                recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Ingredients').dropna()
+                constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Constraints')
                 final_output = run_optimizer(recipe_df, constraints_df)
 
                 bar_figure = go.Figure(data = [go.Bar(x = final_output['Recipe Name'], y = final_output['cost'], marker = {'color': final_output['cost'], 'colorscale' : 'tealrose'})])
