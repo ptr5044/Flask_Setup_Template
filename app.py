@@ -38,12 +38,13 @@ app.layout = html.Div([
                     }
                 ),
 
-                html.H6(
-                    'This includes the simple recipe optimizer without price simulation.  For simulation, please use the heatmap dashboard',
+                html.P(
+                    'This includes the simple recipe optimizer without price simulation.',
                     style = {
                         'padding-left':'20px',
-                        'padding-top':'10px',
-                        'padding-right':'10px'
+                        'padding-right':'20px',
+                        'padding-bottom':'15px',
+                        'padding-top':'-5px'
 
                     }
                 )
@@ -73,15 +74,15 @@ app.layout = html.Div([
                         html.A('Select Files')
                     ]),
                     style={
-                        'width': '400px',
+                        'width': '300px',
                         'height': '60px',
                         'lineHeight': '60px',
                         'borderWidth': '1px',
                         'borderStyle': 'dashed',
                         'borderRadius': '5px',
                         'textAlign': 'center',
-                        'margin': '30px',
-                        'position':'absolute'
+                        'margin': '20px',
+                        'position':'absolute',
                     },
 
                     # Allow multiple files to be uploaded
@@ -92,7 +93,7 @@ app.layout = html.Div([
                     "Please make sure all uploads follow the template below, otherwise the app will not function!",
                     style = {
                         'padding-left':'20px',
-                        'padding-top':'130px',
+                        'padding-top':'100px',
                         'padding-right':'30px',
                         'text-align':'justify'
                     }
@@ -112,7 +113,7 @@ app.layout = html.Div([
                     id = 'download-link',
                     href = "https://teams.microsoft.com/_#/xlsx/viewer/teams/https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization~2FShared%20Documents~2FGeneral~2Fexample_template.xlsx?threadId=19:0b4cc01bbc0e494fbce614c89e97e319@thread.tacv2&baseUrl=https:~2F~2Fteam.effem.com~2Fsites~2FRecipeOptimization&fileId=4ace4ed9-6fa0-4e9d-acb2-42ab2926ee9c&ctx=files&rootContext=items_view&viewerAction=view",
                     style = {
-                        'padding-top':'50px',
+                        'padding-top':'30px',
                         'padding-left':'20px',
                         'color':'white',
                         'font-size':'20px'
@@ -124,7 +125,7 @@ app.layout = html.Div([
                     'height':'480px'
                 })
 
-        ], className = 'col-4',
+        ], className = 'col-2',
             style = {
                 'margin':'20px',
                 'height':'700px'
@@ -142,7 +143,7 @@ app.layout = html.Div([
                 html.Div([ 
 
                     html.Div([
-                        'Graph Output'
+                        'Existing Recipe Graph Output'
                     ], className = 'card-header'),
 
                     html.Div(id = 'output-graph-upload')
@@ -150,7 +151,7 @@ app.layout = html.Div([
                 ], className = 'card border-primary mb-3',
                     style = {
                         'height':'500px',
-                        'width':'1100px',
+                        'width':'750px',
                         'margin':'20px'
                     }),
 
@@ -163,7 +164,7 @@ app.layout = html.Div([
                 html.Div([ 
 
                     html.Div([
-                        'Data Output'
+                        'Existing Recipe Data Output'
                     ], className = 'card-header'),
 
                     #output data frame
@@ -175,7 +176,7 @@ app.layout = html.Div([
                 ], className = 'card border-secondary mb-3',
                     style = {
                         'height':'500px',
-                        'width':'1100px',
+                        'width':'750px',
                         'margin':'20px'
                     }
                 )
@@ -183,9 +184,65 @@ app.layout = html.Div([
 
             ], className = 'row')
 
-        ], className = 'col-7'),
+        ], className = 'col-4'),
 
-    ], className = 'row')
+        #left column
+        html.Div([
+
+            #upper row
+            html.Div([ 
+
+                #graph container
+                html.Div([ 
+
+                    html.Div([
+                        'Optimized Case Graph Output'
+                    ], className = 'card-header'),
+
+                    html.Div(id = 'output-graph-upload2')
+
+                ], className = 'card border-primary mb-3',
+                    style = {
+                        'height':'500px',
+                        'width':'700px',
+                        'margin':'20px'
+                    }),
+
+            ], className = 'row'),
+
+            #lower row
+            html.Div([ 
+
+                #data container
+                html.Div([ 
+
+                    html.Div([
+                        'Optimized Case Data Output'
+                    ], className = 'card-header'),
+
+                    #output data frame
+                    html.Div([ 
+                        html.H1()
+                    ], className = 'card-body',
+                        id = 'output-data-upload2')
+
+                ], className = 'card border-secondary mb-3',
+                    style = {
+                        'height':'500px',
+                        'width':'700px',
+                        'margin':'20px'
+                    }
+                )
+
+
+            ], className = 'row')
+
+        ], className = 'col-4'),
+
+    ], className = 'row',
+        style = {
+            'width':'2500px'
+        })
 
  ])
 
@@ -316,6 +373,8 @@ def run_optimizer(recipe_df, constraints_df):
 
 
     #checks how many existing recipes there are
+    all_existing_recipes = pd.DataFrame()
+
     for col in seperated_recipes_df.columns:
         existing_recipe = pd.DataFrame(np.zeros((1, ingredients.size)))
         existing_recipe.columns = ingredients
@@ -325,7 +384,7 @@ def run_optimizer(recipe_df, constraints_df):
             existing_recipe.iat[0, g] = seperated_recipes_df.iloc[g][col]
         existing_recipe['cost'] = find_cost(np.array(costdf), np.array(seperated_recipes_df[col]))
         existing_recipe['Recipe Name'] = col[-6:]
-        all_optimized_recipes = all_optimized_recipes.append(existing_recipe)
+        all_existing_recipes = all_existing_recipes.append(existing_recipe)
  
         
 
@@ -334,8 +393,9 @@ def run_optimizer(recipe_df, constraints_df):
     neworder = np.insert(neworder, 1, 'cost', axis = 0)
 
     all_optimized_recipes = all_optimized_recipes.reindex(columns=neworder)
+    all_existing_recipes = all_existing_recipes.reindex(columns=neworder)
 
-    return all_optimized_recipes.round(2)
+    return all_existing_recipes.round(2), all_optimized_recipes.round(2)
 
 
 #obtain files from front end
@@ -354,13 +414,20 @@ def parse_contents(contents, filename, date):
             try:
                 recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Ingredients').dropna()
                 constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Constraints')
-                final_output = run_optimizer(recipe_df, constraints_df)
+                existing_output, optimized_output = run_optimizer(recipe_df, constraints_df)
 
-                bar_figure = go.Figure(data = [go.Bar(x = final_output['Recipe Name'], y = final_output['cost'], marker = {'color': final_output['cost'], 'colorscale' : 'tealrose'})])
-                bar_figure.update_layout(title_text = 'Cost for Optimized Cases and Existing Recipes')
-                bar_figure.update_xaxes(title_text = 'Recipe Name', tickangle = 45)
-                bar_figure.update_yaxes(range = [final_output['cost'].min()-100, final_output['cost'].max()+50], title_text = 'Cost for 1000kg')
+                min_range = existing_output['cost'].min()-100
+                max_range = existing_output['cost'].max()+50
 
+                existing_bar_figure = go.Figure(data = [go.Bar(x = existing_output['Recipe Name'], y = existing_output['cost'], marker = {'color': existing_output['cost'], 'colorscale' : 'tealrose'})])
+                existing_bar_figure.update_layout(title_text = 'Cost for Existing Recipes')
+                existing_bar_figure.update_xaxes(title_text = 'Recipe Name', tickangle = 45)
+                existing_bar_figure.update_yaxes(range = [min_range, max_range], title_text = 'Cost for 1000kg')
+
+                optimized_bar_figure = go.Figure(data = [go.Bar(x = optimized_output['Recipe Name'], y = optimized_output['cost'], marker = {'color': optimized_output['cost'], 'colorscale' : 'cividis'})])
+                optimized_bar_figure.update_layout(title_text = 'Cost for Optimized Cases')
+                optimized_bar_figure.update_xaxes(title_text = 'Recipe Name', tickangle = 45)
+                optimized_bar_figure.update_yaxes(range = [min_range, max_range], title_text = 'Cost for 1000kg')
 
 
             except Exception as e:
@@ -378,25 +445,43 @@ def parse_contents(contents, filename, date):
 
     return html.Div([
         html.H6(
-            'Ingredients for Optimized and Existing Recipes',
+            'Ingredients for Existing Recipes',
             style = {
                 'padding-bottom' : '10px'
             }
         ),
 
         dash_table.DataTable(
-            data=final_output.to_dict('records'),
-            columns=[{'name': i, 'id': i} for i in final_output.columns]
+            data=existing_output.to_dict('records'),
+            columns=[{'name': i, 'id': i} for i in existing_output.columns]
         )
     ]), html.Div([
             dcc.Graph(
-                figure = bar_figure
+                figure = existing_bar_figure
+            )
+        ]),html.Div([
+        html.H6(
+            'Ingredients for Optimized Recipes',
+            style = {
+                'padding-bottom' : '10px'
+            }
+        ),
+
+        dash_table.DataTable(
+            data=optimized_output.to_dict('records'),
+            columns=[{'name': i, 'id': i} for i in optimized_output.columns]
+        )
+    ]),html.Div([
+            dcc.Graph(
+                figure = optimized_bar_figure
             )
         ])
 
 @app.callback(
         [Output('output-data-upload', 'children'),
-        Output('output-graph-upload', 'children')],
+        Output('output-graph-upload', 'children'),
+        Output('output-data-upload2', 'children'),
+        Output('output-graph-upload2', 'children')],
         [Input('upload-data', 'contents')],
         [State('upload-data', 'filename'),
         State('upload-data', 'last_modified')])
@@ -411,7 +496,7 @@ def update_output(content, names, dates):
         return children[0]
     else:
 
-        return html.Div(" "), html.H4(["Hi there! Upload your file to get started."], style = {'margin':'20px'})
+        return html.Div(""), html.H4(["Hi there! Upload your file to get started."], style = {'margin':'20px'}), html.Div(""), html.Div("")
     
 
 
