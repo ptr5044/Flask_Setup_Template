@@ -10,7 +10,6 @@ import io
 import dash_table
 import plotly.graph_objs as go
 
-from flask import Flask
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -241,7 +240,8 @@ app.layout = html.Div([
 
     ], className = 'row',
         style = {
-            'width':'2500px'
+            'width':'2500px',
+            'zoom': '75%'
         })
 
  ])
@@ -311,8 +311,8 @@ def run_optimizer(recipe_df, constraints_df):
 
         #creates problem to solve
         total_cost = ''      
-        for cost in costdf:
-            formula = decision_variables[i] * cost
+        for i in range (costdf.size):
+            formula = decision_variables[i] * costdf[i]
             total_cost += formula
 
         prob += total_cost
@@ -347,11 +347,15 @@ def run_optimizer(recipe_df, constraints_df):
 
         prob.solve()
 
+        print(prob)
+
         #writes recipe for solved optimization problem
         recipe = np.array([])
         for v in prob.variables():
             recipe = np.append(recipe, v.varValue)
         recipe = recipe[recipe != np.array(None)]
+
+        
 
 
         #established dataframe constaining optimized recipe values
@@ -412,8 +416,8 @@ def parse_contents(contents, filename, date):
         elif 'xls' or 'xlsx' in filename:
             # Assume that the user uploaded an excel file
             try:
-                recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Ingredients').dropna()
-                constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 'Constraints')
+                recipe_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 0).dropna()
+                constraints_df = pd.read_excel(io.BytesIO(decoded), sheet_name = 1)
                 existing_output, optimized_output = run_optimizer(recipe_df, constraints_df)
 
                 min_range = existing_output['cost'].min()-100
@@ -502,5 +506,9 @@ def update_output(content, names, dates):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', port=8050,debug=True)
+
+# if __name__ == '__main__':
+#     app.run_server(host='127.0.0.1', port=8050,debug=True)
+
 

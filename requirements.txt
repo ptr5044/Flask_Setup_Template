@@ -1,6 +1,9 @@
 xlrd
 dash
 dash_bootstrap_components
+dash_table
 pandas
 numpy
+pulp
+plotly
 
