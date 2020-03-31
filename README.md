@@ -1,4 +1,4 @@
-Flask/Dash App Template
+Flask/Dash App for Recipe Optimization
 =============================
 
 Hey all, download the dependencies by running: py -m pip install -r requirements.txt
